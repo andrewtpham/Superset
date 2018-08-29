@@ -1,34 +1,57 @@
-# Superset_Docker
+# Superset
 
-Superset is open source and does not require any coding. You only need a few technical steps at the beginning, such as cloning the repository and connecting your database to Superset. Once it is done anyone can explore and analyze their datasets. 
-
-See what Superset can do for you and how to implement it.
-
-Superset Apache 
-
-Superset is a modern, enterprise-ready business intelligence web application
-Its main goal is to make it easy to slice, dice and visualize data. Its developer claims that Superset can perform analytics at the speed of thought, why don’t you check it out yourself?
-
-Superset is our recommended tool for these reasons: 
-
-Superset is designed to be highly available. It is “cloud-native” as it has been designed scale out in large, distributed environments, and works well inside containers; 
-
-Superset is offering way more flexibility than other BI Tool and lets you choose your web server, your metadata database engine, your message queue, your results backend, your caching layer and has the ability to run analytic workloads against most popular database technologies; 
-
-Superset charts and graphs look appealing, modern and innovative through its wide types of visualizations (maps, iFrame, Time Series, etc..).
-
-Superset Apache is the most used BI Tool by organizations such as Airbnb, Yahoo! and Twitter.
+Docker image for [Superset](https://github.com/ApacheInfra/superset).
 
 
+## Examples
+
+Navigate to the [`examples`](./examples) directory to view examples of how to configure Superset with MySQL, PostgreSQL, or SQLite.
 
 
+## Versions
+
+This repo is tagged in parallel with superset. Pulling `amancevice/superset:0.18.5` will fetch the image of this repository running superset version `0.18.5`. It is possible that the `latest` tag includes new features/support libraries but will usually be in sync with the latest semantic version.
 
 
-Key Features 
+## Configuration
 
-An intuitive interface to explore and visualize datasets, and create interactive dashboards;
-A wide array of beautiful visualizations to showcase your data (30 types of visualizations);
-Easy, code-free, user flows to drill down and slice and dice the data underlying exposed dashboards;
-Deep integration with Druid allows for Superset to stay blazing fast while slicing and dicing large, realtime datasets;
-Accepts all the data sources that support SQL Alchemy;
-Configurable caching options for fast loading dashboards.
+Follow the [instructions](https://superset.incubator.apache.org/installation.html#configuration) provided by Apache Superset for writing your own `superset_config.py`. Place this file in a local directory and mount this directory to `/etc/superset` inside the container. This location is included in the image's `PYTHONPATH`. Mounting this file to a different location is possible, but it will need to be in the `PYTHONPATH`.
+
+View the contents of the [`examples`](./examples) directory to see some simple `superset_config.py` samples.
+
+
+## Volumes
+
+The image defines two data volumes: one for mounting configuration into the container, and one for data (logs, SQLite DBs, &c).
+
+The configuration volume is located alternatively at `/etc/superset` or `/home/superset`; either is acceptable. Both of these directories are included in the `PYTHONPATH` of the image. Mount any configuration (specifically the `superset_config.py` file) here to have it read by the app on startup.
+
+The data volume is located at `/var/lib/superset` and it is where you would mount your SQLite file (if you are using that as your backend), or a volume to collect any logs that are routed there. This location is used as the value of the `SUPERSET_HOME` environmental variable.
+
+## Database Initialization
+
+After starting the Superset server, initialize the database with an admin user and Superset tables using the `superset-init` helper script:
+
+```bash
+docker run --detach --name superset [options] amancevice/superset
+docker exec -it superset superset-init
+```
+
+
+## Upgrading
+
+Upgrading to a newer version of superset can be accomplished by re-pulling `amancevice/superset`at a specified superset version or `latest` (see above for more on this). Remove the old container and re-deploy, making sure to use the correct environmental configuration. Finally, ensure the superset database is migrated up to the head:
+
+```bash
+# Pull desired version
+docker pull amancevice/superset
+
+# Remove the current container
+docker rm -f superset-old
+
+# Deploy a new container ...
+docker run --detach --name superset-new [options] amancevice/superset
+
+# Upgrade the DB
+docker exec superset-new superset db upgrade
+```
